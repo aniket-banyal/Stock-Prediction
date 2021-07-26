@@ -1,3 +1,12 @@
 STOCK_CSV_BASE_PATH = 'stocks_csv'
-FEATURE_KEYS = ['Open', 'High', 'Low', 'Close', 'Volume']
+
+OPEN_COLUMN = 'Open'
+HIGH_COLUMN = 'High'
+LOW_COLUMN = 'Low'
+CLOSE_COLUMN = 'Close'
+VOL_COLUMN = 'Volume'
+
+FEATURE_KEYS = [OPEN_COLUMN, HIGH_COLUMN, LOW_COLUMN, CLOSE_COLUMN, VOL_COLUMN]
+# FEATURE_KEYS = ['Open', 'High', 'Low', 'Close', 'Volume']
+
 FUTURE_PERIOD_PREDICT = 1
