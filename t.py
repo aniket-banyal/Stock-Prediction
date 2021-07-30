@@ -1,8 +1,9 @@
-from data.preprocessed_data import PreprocessedData
-from model.model import LstmModel
-from data.data_processor import PandasDataProcessor
-from data.raw_data import YfinanceNSERawData
 import matplotlib.pyplot as plt
+
+from data.data_processor import PandasDataProcessor
+from data.preprocessed_data import PreprocessedData
+from data.raw_data import YfinanceNSERawData
+from model.model import LstmModel
 
 # ticker = 'Wipro'
 ticker = 'Reliance'
@@ -11,7 +12,7 @@ model = LstmModel(ticker, PreprocessedData, PandasDataProcessor, YfinanceNSERawD
 model.train(1)
 # model.evaluate(dataset)
 x = model.predict()
-print(x)
+print(f'Predicted change in closing price of {ticker} is : {x}')
 
 
 # def show_plot(plot_data, title):

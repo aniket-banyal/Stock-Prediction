@@ -22,21 +22,21 @@ Then, run the following in terminal:
 
 ```bash
 pip install -r requirements.txt
-python t.py
+python run.py
 ```
 ## Quickstart
 
 ```python
-from data.preprocessed_data import PreprocessedData
-from model.model import LstmModel
 from data.data_processor import PandasDataProcessor
+from data.preprocessed_data import PreprocessedData
 from data.raw_data import YfinanceNSERawData
+from model.model import LstmModel
 
 ticker = 'Reliance'
 model = LstmModel(ticker, PreprocessedData, PandasDataProcessor, YfinanceNSERawData)
 model.train(epochs=10)
 x = model.predict()
-print(f'Predicted change in closing price of {ticker} is - {x}')
+print(f'Predicted change in closing price of {ticker} is : {x}')
 ```
 (Currently, only symbols of NSE stocks can be used as a ticker)
 
