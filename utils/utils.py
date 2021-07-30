@@ -6,8 +6,6 @@ NSE_COMPANY_NAME_AND_SYMBOLS_FILE_NAME = 'nse_company_name_and_symbols.csv'
 NAME_OF_COMP_COLUMN = 'NAME OF COMPANY'
 SYMBOL_COLUMN = 'SYMBOL'
 
-SAVED_MODELS_BASE_PATH = 'saved_models'
-
 
 class InvalidTickerError(Exception):
     def __init__(self, ticker: str) -> None:

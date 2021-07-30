@@ -1,11 +1,12 @@
 import os
 from abc import ABC, abstractmethod
+from typing import Type
 
 import numpy as np
 import pandas as pd
-from data.constants import CLOSE_COLUMN, FEATURE_KEYS
-from data.preprocess_data import (get_preprocessed_datasets,
-                                  get_preprocessed_prediction_df)
+from data.data_processor import DataProcessor
+from data.preprocessed_data import PreprocessedData
+from data.raw_data import RawDataSource
 from tensorflow.keras.layers import LSTM, BatchNormalization, Dense, Dropout
 from tensorflow.keras.models import Sequential
 from tensorflow.python.framework import errors_impl
@@ -22,18 +23,18 @@ class ModelNotFoundError(Exception):
 
 
 class Model(ABC):
-    def __init__(self, ticker: str) -> None:
+    def __init__(self, ticker: str, preprocessed_data: Type[PreprocessedData],
+                 data_processor: Type[DataProcessor], raw_data_source: Type[RawDataSource]) -> None:
         validate_ticker(ticker)
         self.ticker = ticker
+        self.preprocessed_data = preprocessed_data(ticker, data_processor, raw_data_source)
+        self.input_shape = (SEQ_LEN, len(self.preprocessed_data.data_processor.raw_data_source.FEATURE_KEYS))
 
-    def train(self):
-        epochs = 1
-
-        dataset_train, dataset_val, dataset_test = get_preprocessed_datasets(self.ticker)
+    def train(self, epochs: int = 1):
+        dataset_train, dataset_val, dataset_test = self.preprocessed_data.get_preprocessed_datasets()
 
         for batch in dataset_train.take(1):
             inputs, targets = batch
-
         print("Input shape:", inputs.numpy().shape)
         print("Target shape:", targets.numpy().shape)
 
@@ -68,9 +69,10 @@ class Model(ABC):
 
     def predict(self):
         model = self.__load_saved_model()
-        x, scaler = get_preprocessed_prediction_df(self.ticker)
-        y = model.predict(x)[0]
-        actual_y = self.invTransform(scaler, y, CLOSE_COLUMN, FEATURE_KEYS)[0]
+        x = self.preprocessed_data.get_preprocessed_prediction_dataset()
+        scaler = self.preprocessed_data.data_processor.get_scaler()
+        y = model.predict(x)
+        actual_y = self.invTransform(scaler, y, self.preprocessed_data.data_processor.raw_data_source.CLOSE_COLUMN, self.preprocessed_data.data_processor.raw_data_source.FEATURE_KEYS)[0]
 
         return actual_y*100
 
@@ -86,13 +88,17 @@ class Model(ABC):
         pass
 
 
+# you could have various LstmModels by having their own STEP, SEQ_LEN
 class LstmModel(Model):
-    input_shape = (SEQ_LEN, len(FEATURE_KEYS))
 
     def create_model(self):
         model = Sequential()
-        model.add(LSTM(128, input_shape=self.input_shape, return_sequences=True))
+        model.add(LSTM(256, input_shape=self.input_shape, return_sequences=True))
         model.add(Dropout(0.2))
+        model.add(BatchNormalization())
+
+        model.add(LSTM(128, return_sequences=True))
+        model.add(Dropout(0.1))
         model.add(BatchNormalization())
 
         model.add(LSTM(128, return_sequences=True))
