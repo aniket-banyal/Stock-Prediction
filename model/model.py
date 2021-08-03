@@ -41,7 +41,7 @@ class Model(ABC):
         input_shape = (inputs.shape[1], inputs.shape[2])
         assert input_shape == self.input_shape
 
-        model = self.create_model()
+        model = self.__get_model()
 
         checkpoint_path = get_checkpoint_path(self.ticker)
         checkpoint = ModelCheckpoint(checkpoint_path, monitor='val_loss',
@@ -57,12 +57,20 @@ class Model(ABC):
         print('History: ', history.history)
         print('Test Loss: ', model.evaluate(dataset_test))
 
+    def __get_model(self):
+        try:
+            model = self.__load_saved_model()
+        except ModelNotFoundError:
+            model = self.__create_model()
+        return model
+
     def __load_saved_model(self):
+        # the weights of the loaded model can be different from the weights of the model in train cuz only the best weights are saved.
         checkpoint_path = get_checkpoint_path(self.ticker)
-        model = self.create_model()
+        model = self._create_model()
         # latest = tf.train.latest_checkpoint(os.path.dirname(checkpoint_path))
         try:
-            model.load_weights(checkpoint_path).expect_partial()
+            model.load_weights(checkpoint_path)
         except errors_impl.NotFoundError:
             raise ModelNotFoundError(self.ticker)
         return model
@@ -72,26 +80,26 @@ class Model(ABC):
         x = self.preprocessed_data.get_preprocessed_prediction_dataset()
         scaler = self.preprocessed_data.data_processor.get_scaler()
         y = model.predict(x)
-        actual_y = self.invTransform(scaler, y, self.preprocessed_data.data_processor.raw_data_source.CLOSE_COLUMN, self.preprocessed_data.data_processor.raw_data_source.FEATURE_KEYS)[0]
+        actual_y = self.__invTransform(scaler, y, self.preprocessed_data.data_processor.raw_data_source.CLOSE_COLUMN, self.preprocessed_data.data_processor.raw_data_source.FEATURE_KEYS)[0]
 
         return actual_y*100
 
     @staticmethod
-    def invTransform(scaler, data, colName, colNames):
+    def __invTransform(scaler, data, colName, colNames):
         dummy = pd.DataFrame(np.zeros((len(data), len(colNames))), columns=colNames)
         dummy[colName] = data
         dummy = pd.DataFrame(scaler.inverse_transform(dummy), columns=colNames)
         return dummy[colName].values
 
     @abstractmethod
-    def create_model():
+    def _create_model():
         pass
 
 
 # you could have various LstmModels by having their own STEP, SEQ_LEN
 class LstmModel(Model):
 
-    def create_model(self):
+    def _create_model(self):
         model = Sequential()
         model.add(LSTM(256, input_shape=self.input_shape, return_sequences=True))
         model.add(Dropout(0.2))
