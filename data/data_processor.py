@@ -1,5 +1,6 @@
 import os
 from abc import ABC, abstractmethod
+from datetime import datetime, timedelta
 from typing import List, Type
 
 import joblib
@@ -21,7 +22,7 @@ class DataProcessor(ABC):
         """Returns train, val and test dataframes"""
 
     @ abstractmethod
-    def get_preprocessed_prediction_df(self):
+    def get_preprocessed_prediction_df(self, date: datetime):
         """Returns a preprocessed dataframe to be used for prediction"""
 
 
@@ -66,9 +67,14 @@ class PandasDataProcessor(DataProcessor):
 
         return df, scaler
 
-    def get_preprocessed_prediction_df(self, seq_len) -> pd.DataFrame:
+    def get_preprocessed_prediction_df(self, date: datetime, seq_len) -> pd.DataFrame:
         # after preprocessing data, some rows will get dropped, so that's why x=x.tail(seq_len) needs to be done after preprocessing
         df = self.raw_data_source.get_raw_df()
+
+        # in loc the end index is included so subtracting 1
+        end_date = date - timedelta(days=1)
+        df = df.loc[:end_date]
+
         df = df[self.raw_data_source.FEATURE_KEYS]
         scaler = self.get_scaler()
         x, _ = self.get_preprocessed_df(df, scaler=scaler, return_y=False)

@@ -1,9 +1,11 @@
 import os
 from abc import ABC, abstractmethod
+from datetime import datetime
 from typing import Type
 
 import numpy as np
 import pandas as pd
+import pytz
 from data.data_processor import DataProcessor
 from data.preprocessed_data import PreprocessedData
 from data.raw_data import RawDataSource
@@ -75,14 +77,24 @@ class Model(ABC):
             raise ModelNotFoundError(self.ticker)
         return model
 
-    def predict(self):
+    def predict(self, date: str = None):
+        pred_date = self.__get_prediction_date(date)
+
         model = self.__load_saved_model()
-        x = self.preprocessed_data.get_preprocessed_prediction_dataset()
+        x = self.preprocessed_data.get_preprocessed_prediction_dataset(pred_date)
         scaler = self.preprocessed_data.data_processor.get_scaler()
         y = model.predict(x)
         actual_y = self.__invTransform(scaler, y, self.preprocessed_data.data_processor.raw_data_source.CLOSE_COLUMN, self.preprocessed_data.data_processor.raw_data_source.FEATURE_KEYS)[0]
 
-        return actual_y*100
+        return actual_y*100, pred_date
+
+    def __get_prediction_date(self, date: str = None):
+        if date is None:
+            pred_date = datetime.now().date()
+            # timezone = pytz.timezone("Asia/Kolkata")
+        else:
+            pred_date = datetime.strptime(date, '%Y-%m-%d').date()
+        return pred_date
 
     @staticmethod
     def __invTransform(scaler, data, colName, colNames):
