@@ -67,6 +67,7 @@ class PandasDataProcessor(DataProcessor):
         return df, scaler
 
     def get_preprocessed_prediction_df(self, seq_len) -> pd.DataFrame:
+        # after preprocessing data, some rows will get dropped, so that's why x=x.tail(seq_len) needs to be done after preprocessing
         df = self.raw_data_source.get_raw_df()
         df = df[self.raw_data_source.FEATURE_KEYS]
         scaler = self.get_scaler()
