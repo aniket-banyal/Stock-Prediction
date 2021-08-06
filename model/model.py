@@ -1,6 +1,6 @@
 import os
 from abc import ABC, abstractmethod
-from datetime import datetime
+import datetime as dt
 from typing import Type
 
 import numpy as np
@@ -81,19 +81,20 @@ class Model(ABC):
         pred_date = self.__get_prediction_date(date)
 
         model = self.__load_saved_model()
-        x = self.preprocessed_data.get_preprocessed_prediction_dataset(pred_date)
+        x, actual_pred_date = self.preprocessed_data.get_preprocessed_prediction_dataset(pred_date)
         scaler = self.preprocessed_data.data_processor.get_scaler()
         y = model.predict(x)
         actual_y = self.__invTransform(scaler, y, self.preprocessed_data.data_processor.raw_data_source.CLOSE_COLUMN, self.preprocessed_data.data_processor.raw_data_source.FEATURE_KEYS)[0]
 
-        return actual_y*100, pred_date
+        return actual_y*100, actual_pred_date
 
-    def __get_prediction_date(self, date: str = None):
+    @staticmethod
+    def __get_prediction_date(date: str = None):
         if date is None:
-            pred_date = datetime.now().date()
+            pred_date = dt.datetime.now().date()
             # timezone = pytz.timezone("Asia/Kolkata")
         else:
-            pred_date = datetime.strptime(date, '%Y-%m-%d').date()
+            pred_date = dt.datetime.strptime(date, '%Y-%m-%d').date()
         return pred_date
 
     @staticmethod
