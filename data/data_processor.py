@@ -77,6 +77,9 @@ class PandasDataProcessor(DataProcessor):
         df = df[self.raw_data_source.FEATURE_KEYS]
         scaler = self.get_scaler()
         x, _ = self.get_preprocessed_df(df, scaler=scaler, return_y=False)
+        len_x = len(x)
+        if len_x < seq_len:
+            raise NotEnoughSequencesError(pred_date, seq_len, len_x)
         x = x.tail(seq_len)
         return x
 
@@ -102,3 +105,9 @@ class PandasDataProcessor(DataProcessor):
         base_path = os.path.dirname(os.path.realpath(__file__))
         file_path = os.path.join(base_path, self.SCALER_FILE_NAME)
         return file_path
+
+
+class NotEnoughSequencesError(Exception):
+    def __init__(self, pred_date: dt.date, seq_len: int, len_x: int) -> None:
+        msg = f"We need {seq_len} number of sequences to be able to predict but for date {pred_date} only {len_x} number of sequences are there. Please try a higher date."
+        super().__init__(msg)

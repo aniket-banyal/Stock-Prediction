@@ -1,4 +1,5 @@
 import datetime as dt
+from model.constants import SEQ_LEN
 import os
 
 import pandas as pd
@@ -16,8 +17,11 @@ class InvalidTickerError(Exception):
 
 
 class InvalidPredictionDateError(Exception):
-    def __init__(self, pred_date: dt.date, df_last_date: dt.date) -> None:
-        msg = f"We have data till {df_last_date}, so model can predict only till {df_last_date + dt.timedelta(days=1)}. But you called model's predict function with this prediction date: {pred_date}"
+    def __init__(self, pred_date: dt.date, df_date: dt.date, lower: bool = False) -> None:
+        if lower:
+            msg = f"We have data till {df_date} and model needs sequences of length {SEQ_LEN} to predict. So model can predict only for dates starting from {df_date + dt.timedelta(days=SEQ_LEN)}. But you called model's predict function with this prediction date: {pred_date}"
+        else:
+            msg = f"We have data till {df_date}, so model can predict only till {df_date + dt.timedelta(days=1)}. But you called model's predict function with this prediction date: {pred_date}"
         super().__init__(msg)
 
 
@@ -63,29 +67,33 @@ def get_prediction_date(df: pd.DataFrame, date: str = None):
     else:
         pred_date = get_date_from_string(date)
 
+    df_first_date = df.index[0].date()
     df_last_date = df.index[-1].date()
-    return get_correct_pred_date(pred_date, df_last_date)
+    return get_correct_pred_date(pred_date, df_first_date, df_last_date)
 
 
-def get_correct_pred_date(pred_date: dt.date, df_last_date: dt.date):
+def get_correct_pred_date(pred_date: dt.date, df_first_date: dt.date, df_last_date: dt.date):
     """
     If df_last_date is Fri and date is Sat or Sun then the actual pred_date is of next Mon
 
     If df_last_date >= date - dt.timedelta(days=1) then we surely have the data for that pred_date
     """
 
+    if df_first_date + dt.timedelta(days=SEQ_LEN) > pred_date:
+        raise InvalidPredictionDateError(pred_date, df_first_date, lower=True)
+
+    # If df_last_date is Fri and pred_date is greater than next Mon
     if df_last_date.weekday() == 4:
-        # If df_last_date if Fri and pred_date is of Sat
-        if pred_date == df_last_date + dt.timedelta(days=1):
-            pred_date += dt.timedelta(days=2)
-        # If df_last_date if Fri and pred_date is of Sun
-        elif pred_date == df_last_date + dt.timedelta(days=2):
-            pred_date += dt.timedelta(days=1)
-        # If df_last_date is Fri and pred_date is greater than next Mon
-        elif pred_date > df_last_date + dt.timedelta(days=3):
+        if pred_date > df_last_date + dt.timedelta(days=3):
             raise InvalidPredictionDateError(pred_date, df_last_date)
 
     elif df_last_date < pred_date - dt.timedelta(days=1):
         raise InvalidPredictionDateError(pred_date, df_last_date)
 
+    # If date is Sat or Sun make it Mon
+    if pred_date.weekday() == 5:
+        pred_date += dt.timedelta(days=2)
+
+    elif pred_date.weekday() == 6:
+        pred_date += dt.timedelta(days=1)
     return pred_date
