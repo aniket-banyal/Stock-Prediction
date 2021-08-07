@@ -1,4 +1,5 @@
 from collections import deque
+import datetime as dt
 from typing import Type
 
 import numpy as np
@@ -102,10 +103,10 @@ class PreprocessedData:
         # #         print('x', x[i][0])
         # print('##############################################')
 
-    def get_preprocessed_prediction_dataset(self, seq_len: int = SEQ_LEN,
+    def get_preprocessed_prediction_dataset(self, pred_date: dt.date, seq_len: int = SEQ_LEN,
                                             step: int = STEP, batch_size: int = BATCH_SIZE):
 
-        x = self.data_processor.get_preprocessed_prediction_df(seq_len)
+        x = self.data_processor.get_preprocessed_prediction_df(pred_date, seq_len)
         dataset = keras.preprocessing.timeseries_dataset_from_array(
             x,
             targets=None,

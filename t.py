@@ -9,7 +9,7 @@ from model.model import LstmModel
 ticker = 'Reliance'
 
 model = LstmModel(ticker, PreprocessedData, PandasDataProcessor, YfinanceNSERawData)
-model.train(1)
+# model.train(1)
 # model.evaluate(dataset)
 # date = '2021-08-06'
 # date = '2021-08-07'

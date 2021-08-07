@@ -1,9 +1,11 @@
 import os
 from abc import ABC, abstractmethod
+import datetime as dt
 from typing import Type
 
 import numpy as np
 import pandas as pd
+import pytz
 from data.data_processor import DataProcessor
 from data.preprocessed_data import PreprocessedData
 from data.raw_data import RawDataSource
@@ -11,8 +13,7 @@ from tensorflow.keras.layers import LSTM, BatchNormalization, Dense, Dropout
 from tensorflow.keras.models import Sequential
 from tensorflow.python.framework import errors_impl
 from tensorflow.python.keras.callbacks import ModelCheckpoint
-from utils.utils import validate_ticker
-
+import utils.utils as ut
 from .constants import SAVED_MODELS_BASE_PATH, SEQ_LEN
 
 
@@ -25,7 +26,7 @@ class ModelNotFoundError(Exception):
 class Model(ABC):
     def __init__(self, ticker: str, preprocessed_data: Type[PreprocessedData],
                  data_processor: Type[DataProcessor], raw_data_source: Type[RawDataSource]) -> None:
-        validate_ticker(ticker)
+        ut.validate_ticker(ticker)
         self.ticker = ticker
         self.preprocessed_data = preprocessed_data(ticker, data_processor, raw_data_source)
         self.input_shape = (SEQ_LEN, len(self.preprocessed_data.data_processor.raw_data_source.FEATURE_KEYS))
@@ -75,14 +76,27 @@ class Model(ABC):
             raise ModelNotFoundError(self.ticker)
         return model
 
-    def predict(self):
+    def predict(self, date: str = None):
+        y, pred_date = self._predict(date)
+        if date is not None:
+            date = ut.get_date_from_string(date)
+            if pred_date != date:
+                weekday_name = date.strftime('%A')
+                print(f'Date given ({date}) is a {weekday_name}. So, actual prediction is for: {pred_date} (Monday)')
+        return y, pred_date
+
+    def _predict(self, date: str = None):
+        df = self.preprocessed_data.data_processor.raw_data_source.get_raw_df()
+        pred_date = ut.get_prediction_date(df, date)
+        x = self.preprocessed_data.get_preprocessed_prediction_dataset(pred_date)
+
         model = self.__load_saved_model()
-        x = self.preprocessed_data.get_preprocessed_prediction_dataset()
-        scaler = self.preprocessed_data.data_processor.get_scaler()
         y = model.predict(x)
+
+        scaler = self.preprocessed_data.data_processor.get_scaler()
         actual_y = self.__invTransform(scaler, y, self.preprocessed_data.data_processor.raw_data_source.CLOSE_COLUMN, self.preprocessed_data.data_processor.raw_data_source.FEATURE_KEYS)[0]
 
-        return actual_y*100
+        return actual_y*100, pred_date
 
     @staticmethod
     def __invTransform(scaler, data, colName, colNames):
