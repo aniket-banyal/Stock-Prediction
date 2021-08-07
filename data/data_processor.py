@@ -22,7 +22,7 @@ class DataProcessor(ABC):
         """Returns train, val and test dataframes"""
 
     @ abstractmethod
-    def get_preprocessed_prediction_df(self, date: dt.date):
+    def get_preprocessed_prediction_df(self, pred_date: dt.date):
         """Returns a preprocessed dataframe to be used for prediction"""
 
 
@@ -67,45 +67,18 @@ class PandasDataProcessor(DataProcessor):
 
         return df, scaler
 
-    def get_preprocessed_prediction_df(self, date: dt.date, seq_len) -> pd.DataFrame:
+    def get_preprocessed_prediction_df(self, pred_date: dt.date, seq_len: int) -> pd.DataFrame:
         # after preprocessing data, some rows will get dropped, so that's why x=x.tail(seq_len) needs to be done after preprocessing
         df = self.raw_data_source.get_raw_df()
-
-        df_last_date = df.index[-1].date()
-        pred_date = self.get_correct_pred_date(date, df_last_date)
-
         # in loc the end index is included so subtracting 1
         end_date = pred_date - dt.timedelta(days=1)
-
         df = df.loc[:end_date]
 
         df = df[self.raw_data_source.FEATURE_KEYS]
         scaler = self.get_scaler()
         x, _ = self.get_preprocessed_df(df, scaler=scaler, return_y=False)
         x = x.tail(seq_len)
-        return x, pred_date
-
-    def get_correct_pred_date(self, date: dt.date, df_last_date: dt.date):
-        """
-        If df_last_date is Fri and date is Sat or Sun then the actual pred_date is of next Mon
-
-        If df_last_date >= date - dt.timedelta(days=1) then we surely have the data for that pred_date
-        """
-        if df_last_date.weekday() == 4:
-            # If df_last_date if Fri and date is of Sat
-            if date == df_last_date + dt.timedelta(days=1):
-                date += dt.timedelta(days=2)
-            # If df_last_date if Fri and date is of Sun
-            elif date == df_last_date + dt.timedelta(days=2):
-                date += dt.timedelta(days=1)
-            # If df_last_date is Fri and date is greater than next Mon
-            elif date > df_last_date + dt.timedelta(days=3):
-                raise InvalidPredictionDateError(date, df_last_date)
-
-        elif df_last_date < date - dt.timedelta(days=1):
-            raise InvalidPredictionDateError(date, df_last_date)
-
-        return date
+        return x
 
     def train_val_test_split(self, df: pd.DataFrame) -> List[pd.DataFrame]:
         test_split = int((1-self.TEST_SPLIT_FRACTION) * len(df))
@@ -129,9 +102,3 @@ class PandasDataProcessor(DataProcessor):
         base_path = os.path.dirname(os.path.realpath(__file__))
         file_path = os.path.join(base_path, self.SCALER_FILE_NAME)
         return file_path
-
-
-class InvalidPredictionDateError(Exception):
-    def __init__(self, pred_date: dt.date, df_last_date: dt.date) -> None:
-        msg = f"We have data till {df_last_date}, so model can predict only till {df_last_date + dt.timedelta(days=1)}. But you called model's predict function with this prediction date: {pred_date}"
-        super().__init__(msg)

@@ -13,8 +13,7 @@ from tensorflow.keras.layers import LSTM, BatchNormalization, Dense, Dropout
 from tensorflow.keras.models import Sequential
 from tensorflow.python.framework import errors_impl
 from tensorflow.python.keras.callbacks import ModelCheckpoint
-from utils.utils import validate_ticker
-
+import utils.utils as ut
 from .constants import SAVED_MODELS_BASE_PATH, SEQ_LEN
 
 
@@ -27,7 +26,7 @@ class ModelNotFoundError(Exception):
 class Model(ABC):
     def __init__(self, ticker: str, preprocessed_data: Type[PreprocessedData],
                  data_processor: Type[DataProcessor], raw_data_source: Type[RawDataSource]) -> None:
-        validate_ticker(ticker)
+        ut.validate_ticker(ticker)
         self.ticker = ticker
         self.preprocessed_data = preprocessed_data(ticker, data_processor, raw_data_source)
         self.input_shape = (SEQ_LEN, len(self.preprocessed_data.data_processor.raw_data_source.FEATURE_KEYS))
@@ -78,24 +77,17 @@ class Model(ABC):
         return model
 
     def predict(self, date: str = None):
-        pred_date = self.__get_prediction_date(date)
+        df = self.preprocessed_data.data_processor.raw_data_source.get_raw_df()
+        pred_date = ut.get_prediction_date(df, date)
+        x = self.preprocessed_data.get_preprocessed_prediction_dataset(pred_date)
 
         model = self.__load_saved_model()
-        x, actual_pred_date = self.preprocessed_data.get_preprocessed_prediction_dataset(pred_date)
-        scaler = self.preprocessed_data.data_processor.get_scaler()
         y = model.predict(x)
+
+        scaler = self.preprocessed_data.data_processor.get_scaler()
         actual_y = self.__invTransform(scaler, y, self.preprocessed_data.data_processor.raw_data_source.CLOSE_COLUMN, self.preprocessed_data.data_processor.raw_data_source.FEATURE_KEYS)[0]
 
-        return actual_y*100, actual_pred_date
-
-    @staticmethod
-    def __get_prediction_date(date: str = None):
-        if date is None:
-            pred_date = dt.datetime.now().date()
-            # timezone = pytz.timezone("Asia/Kolkata")
-        else:
-            pred_date = dt.datetime.strptime(date, '%Y-%m-%d').date()
-        return pred_date
+        return actual_y*100, pred_date
 
     @staticmethod
     def __invTransform(scaler, data, colName, colNames):

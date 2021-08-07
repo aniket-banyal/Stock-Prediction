@@ -1,3 +1,4 @@
+import datetime as dt
 import os
 
 import pandas as pd
@@ -10,6 +11,12 @@ SYMBOL_COLUMN = 'SYMBOL'
 class InvalidTickerError(Exception):
     def __init__(self, ticker: str) -> None:
         msg = f"'{ticker}' is not a valid stock ticker"
+        super().__init__(msg)
+
+
+class InvalidPredictionDateError(Exception):
+    def __init__(self, pred_date: dt.date, df_last_date: dt.date) -> None:
+        msg = f"We have data till {df_last_date}, so model can predict only till {df_last_date + dt.timedelta(days=1)}. But you called model's predict function with this prediction date: {pred_date}"
         super().__init__(msg)
 
 
@@ -33,3 +40,38 @@ def validate_ticker(ticker):
     df = df[df[SYMBOL_COLUMN].str.fullmatch(ticker, case=False)]
     if len(df) <= 0:
         raise InvalidTickerError(ticker)
+
+
+def get_prediction_date(df: pd.DataFrame, date: str = None):
+    if date is None:
+        pred_date = dt.datetime.now().date()
+        # timezone = pytz.timezone("Asia/Kolkata")
+    else:
+        pred_date = dt.datetime.strptime(date, '%Y-%m-%d').date()
+
+    df_last_date = df.index[-1].date()
+    return get_correct_pred_date(pred_date, df_last_date)
+
+
+def get_correct_pred_date(pred_date: dt.date, df_last_date: dt.date):
+    """
+    If df_last_date is Fri and date is Sat or Sun then the actual pred_date is of next Mon
+
+    If df_last_date >= date - dt.timedelta(days=1) then we surely have the data for that pred_date
+    """
+
+    if df_last_date.weekday() == 4:
+        # If df_last_date if Fri and pred_date is of Sat
+        if pred_date == df_last_date + dt.timedelta(days=1):
+            pred_date += dt.timedelta(days=2)
+        # If df_last_date if Fri and pred_date is of Sun
+        elif pred_date == df_last_date + dt.timedelta(days=2):
+            pred_date += dt.timedelta(days=1)
+        # If df_last_date is Fri and pred_date is greater than next Mon
+        elif pred_date > df_last_date + dt.timedelta(days=3):
+            raise InvalidPredictionDateError(pred_date, df_last_date)
+
+    elif df_last_date < pred_date - dt.timedelta(days=1):
+        raise InvalidPredictionDateError(pred_date, df_last_date)
+
+    return pred_date

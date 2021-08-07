@@ -103,10 +103,10 @@ class PreprocessedData:
         # #         print('x', x[i][0])
         # print('##############################################')
 
-    def get_preprocessed_prediction_dataset(self, date: dt.date, seq_len: int = SEQ_LEN,
+    def get_preprocessed_prediction_dataset(self, pred_date: dt.date, seq_len: int = SEQ_LEN,
                                             step: int = STEP, batch_size: int = BATCH_SIZE):
 
-        x, pred_date = self.data_processor.get_preprocessed_prediction_df(date, seq_len)
+        x = self.data_processor.get_preprocessed_prediction_df(pred_date, seq_len)
         dataset = keras.preprocessing.timeseries_dataset_from_array(
             x,
             targets=None,
@@ -114,7 +114,7 @@ class PreprocessedData:
             sampling_rate=step,
             batch_size=batch_size,
         )
-        return dataset, pred_date
+        return dataset
 
         # x = np.expand_dims(x, 0)
         # return x, scaler
