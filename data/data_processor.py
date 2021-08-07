@@ -1,5 +1,6 @@
 import os
 from abc import ABC, abstractmethod
+import datetime as dt
 from typing import List, Type
 
 import joblib
@@ -21,7 +22,7 @@ class DataProcessor(ABC):
         """Returns train, val and test dataframes"""
 
     @ abstractmethod
-    def get_preprocessed_prediction_df(self):
+    def get_preprocessed_prediction_df(self, pred_date: dt.date):
         """Returns a preprocessed dataframe to be used for prediction"""
 
 
@@ -66,12 +67,19 @@ class PandasDataProcessor(DataProcessor):
 
         return df, scaler
 
-    def get_preprocessed_prediction_df(self, seq_len) -> pd.DataFrame:
+    def get_preprocessed_prediction_df(self, pred_date: dt.date, seq_len: int) -> pd.DataFrame:
         # after preprocessing data, some rows will get dropped, so that's why x=x.tail(seq_len) needs to be done after preprocessing
         df = self.raw_data_source.get_raw_df()
+        # in loc the end index is included so subtracting 1
+        end_date = pred_date - dt.timedelta(days=1)
+        df = df.loc[:end_date]
+
         df = df[self.raw_data_source.FEATURE_KEYS]
         scaler = self.get_scaler()
         x, _ = self.get_preprocessed_df(df, scaler=scaler, return_y=False)
+        len_x = len(x)
+        if len_x < seq_len:
+            raise NotEnoughSequencesError(pred_date, seq_len, len_x)
         x = x.tail(seq_len)
         return x
 
@@ -97,3 +105,9 @@ class PandasDataProcessor(DataProcessor):
         base_path = os.path.dirname(os.path.realpath(__file__))
         file_path = os.path.join(base_path, self.SCALER_FILE_NAME)
         return file_path
+
+
+class NotEnoughSequencesError(Exception):
+    def __init__(self, pred_date: dt.date, seq_len: int, len_x: int) -> None:
+        msg = f"We need {seq_len} number of sequences to be able to predict but for date {pred_date} only {len_x} number of sequences are there. Please try a higher date."
+        super().__init__(msg)

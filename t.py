@@ -9,10 +9,11 @@ from model.model import LstmModel
 ticker = 'Reliance'
 
 model = LstmModel(ticker, PreprocessedData, PandasDataProcessor, YfinanceNSERawData)
-model.train(1)
+# model.train(1)
 # model.evaluate(dataset)
-x = model.predict()
-print(f'Predicted change in closing price of {ticker} is : {x}')
+date = '2021-08-10'
+x, pred_date = model.predict(date)
+print(f'Predicted change in closing price of {ticker} for date: {pred_date} is : {x}')
 
 
 # def show_plot(plot_data, title):
