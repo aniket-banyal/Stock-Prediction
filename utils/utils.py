@@ -42,12 +42,16 @@ def validate_ticker(ticker):
         raise InvalidTickerError(ticker)
 
 
+def get_date_from_string(date: str) -> dt.date:
+    return dt.datetime.strptime(date, '%Y-%m-%d').date()
+
+
 def get_prediction_date(df: pd.DataFrame, date: str = None):
     if date is None:
         pred_date = dt.datetime.now().date()
         # timezone = pytz.timezone("Asia/Kolkata")
     else:
-        pred_date = dt.datetime.strptime(date, '%Y-%m-%d').date()
+        pred_date = get_date_from_string(date)
 
     df_last_date = df.index[-1].date()
     return get_correct_pred_date(pred_date, df_last_date)

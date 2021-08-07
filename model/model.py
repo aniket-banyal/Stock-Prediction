@@ -77,6 +77,15 @@ class Model(ABC):
         return model
 
     def predict(self, date: str = None):
+        y, pred_date = self._predict(date)
+        if date is not None:
+            date = ut.get_date_from_string(date)
+            if pred_date != date:
+                weekday_name = date.strftime('%A')
+                print(f'Date given ({date}) is a {weekday_name}. So, actual prediction is for: {pred_date} (Monday)')
+        return y, pred_date
+
+    def _predict(self, date: str = None):
         df = self.preprocessed_data.data_processor.raw_data_source.get_raw_df()
         pred_date = ut.get_prediction_date(df, date)
         x = self.preprocessed_data.get_preprocessed_prediction_dataset(pred_date)
