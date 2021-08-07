@@ -6,6 +6,7 @@ import pandas as pd
 NSE_COMPANY_NAME_AND_SYMBOLS_FILE_NAME = 'nse_company_name_and_symbols.csv'
 NAME_OF_COMP_COLUMN = 'NAME OF COMPANY'
 SYMBOL_COLUMN = 'SYMBOL'
+DATE_FORMAT = '%Y-%m-%d'
 
 
 class InvalidTickerError(Exception):
@@ -17,6 +18,12 @@ class InvalidTickerError(Exception):
 class InvalidPredictionDateError(Exception):
     def __init__(self, pred_date: dt.date, df_last_date: dt.date) -> None:
         msg = f"We have data till {df_last_date}, so model can predict only till {df_last_date + dt.timedelta(days=1)}. But you called model's predict function with this prediction date: {pred_date}"
+        super().__init__(msg)
+
+
+class InvalidDateError(Exception):
+    def __init__(self, date: dt.date) -> None:
+        msg = f"{date} is not in correct format. Please give date in {DATE_FORMAT} format."
         super().__init__(msg)
 
 
@@ -43,7 +50,10 @@ def validate_ticker(ticker):
 
 
 def get_date_from_string(date: str) -> dt.date:
-    return dt.datetime.strptime(date, '%Y-%m-%d').date()
+    try:
+        return dt.datetime.strptime(date, DATE_FORMAT).date()
+    except ValueError:
+        raise InvalidDateError(date)
 
 
 def get_prediction_date(df: pd.DataFrame, date: str = None):
