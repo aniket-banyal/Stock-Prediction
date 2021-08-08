@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from data.data_processor import PandasDataProcessor
 from data.preprocessed_data import PreprocessedData
 from data.raw_data import YfinanceNSERawData
-from model.model import LstmModel
+from model.keras_model.keras_model import LstmModel
 
 # ticker = 'Wipro'
 ticker = 'Reliance'

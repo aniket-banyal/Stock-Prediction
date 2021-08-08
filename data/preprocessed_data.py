@@ -1,10 +1,9 @@
-from collections import deque
 import datetime as dt
+from collections import deque
 from typing import Type
 
 import numpy as np
 import pandas as pd
-from model.constants import BATCH_SIZE, SEQ_LEN, STEP
 from tensorflow import keras
 
 from data.data_processor import DataProcessor
@@ -16,20 +15,19 @@ class PreprocessedData:
         # validate_ticker(ticker)
         self.data_processor = data_processor(ticker, raw_data_source)
 
-    def get_preprocessed_datasets(self):
+    def get_preprocessed_datasets(self, seq_len: int, batch_size: int, step: int):
         (train_x, train_y), (val_x, val_y),  (test_x, test_y) = self.data_processor.get_preprocessed_dfs()
 
-        dataset_train = self.get_dataset_from_df(train_x, train_y)
-        dataset_val = self.get_dataset_from_df(val_x, val_y)
-        dataset_test = self.get_dataset_from_df(test_x, test_y)
+        dataset_train = self.get_dataset_from_df(train_x, train_y, seq_len, batch_size, step)
+        dataset_val = self.get_dataset_from_df(val_x, val_y, seq_len, batch_size, step)
+        dataset_test = self.get_dataset_from_df(test_x, test_y, seq_len, batch_size, step)
 
         return dataset_train, dataset_val, dataset_test
 
-    def get_dataset_from_df(self, x: pd.DataFrame, y: pd.DataFrame, seq_len: int = SEQ_LEN,
-                            step: int = STEP, batch_size: int = BATCH_SIZE):
+    def get_dataset_from_df(self, x: pd.DataFrame, y: pd.DataFrame, seq_len: int, batch_size: int, step: int):
 
         t = []
-        for i in range(SEQ_LEN-1, len(y), SEQ_LEN):
+        for i in range(seq_len-1, len(y), seq_len):
             t.append(y[i])
 
         dataset = keras.preprocessing.timeseries_dataset_from_array(
@@ -40,8 +38,8 @@ class PreprocessedData:
         )
         return dataset
 
-        #     print(i, ((SEQ_LEN-1) + SEQ_LEN*3))
-        #     if (i % ((SEQ_LEN-1) + SEQ_LEN*3) == 0):
+        #     print(i, ((seq_len-1) + seq_len*3))
+        #     if (i % ((seq_len-1) + seq_len*3) == 0):
         #         print(i)
         #         print(x[i: i+10])
         #     print(y[i])
@@ -49,12 +47,12 @@ class PreprocessedData:
 
         # print()
         # print('Y')
-        # print(y[SEQ_LEN-1: SEQ_LEN*5])
+        # print(y[seq_len-1: seq_len*5])
         # print()
 
         # sequential_data = []
-        # prev_days = deque(maxlen=SEQ_LEN)
-        # # print(x[SEQ_LEN-1:])
+        # prev_days = deque(maxlen=seq_len)
+        # # print(x[seq_len-1:])
         # print()
         # print('T: ')
         # print(t)
@@ -63,7 +61,7 @@ class PreprocessedData:
         # j = 0
         # for i in x.values:
         #     prev_days.append([n for n in i])
-        #     if len(prev_days) == SEQ_LEN and j < len(t):
+        #     if len(prev_days) == seq_len and j < len(t):
         #         sequential_data.append([np.array(prev_days), t[j]])
         #         j += 1
 
@@ -91,7 +89,7 @@ class PreprocessedData:
         # # random.shuffle(sequential_data)
 
         # print('##############################################')
-        # print(len(x), len(y), len(y)//SEQ_LEN, len(x)/SEQ_LEN//batch_size)
+        # print(len(x), len(y), len(y)//seq_len, len(x)/seq_len//batch_size)
         # i = 0
         # for x, y in dataset:
         #     i += 1
@@ -103,8 +101,8 @@ class PreprocessedData:
         # #         print('x', x[i][0])
         # print('##############################################')
 
-    def get_preprocessed_prediction_dataset(self, pred_date: dt.date, seq_len: int = SEQ_LEN,
-                                            step: int = STEP, batch_size: int = BATCH_SIZE):
+    def get_preprocessed_prediction_dataset(self, pred_date: dt.date, seq_len: int,
+                                            batch_size: int, step: int):
 
         x = self.data_processor.get_preprocessed_prediction_df(pred_date, seq_len)
         dataset = keras.preprocessing.timeseries_dataset_from_array(

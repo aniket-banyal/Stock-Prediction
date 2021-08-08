@@ -1,0 +1,4 @@
+SEQ_LEN = 60
+BATCH_SIZE = 32
+STEP = 1
+SAVED_MODELS_BASE_PATH = 'saved_models'
