@@ -21,9 +21,11 @@ from .constants import BATCH_SIZE, SAVED_MODELS_BASE_PATH, SEQ_LEN, STEP
 class KerasModel(Model, ABC):
     def __init__(self, ticker: str, preprocessed_data: Type[PreprocessedData],
                  data_processor: Type[DataProcessor], raw_data_source: Type[RawDataSource],
-                 seq_len: int = SEQ_LEN, batch_size: int = BATCH_SIZE, step: int = STEP) -> None:
+                 name: str, seq_len: int = SEQ_LEN, batch_size: int = BATCH_SIZE,
+                 step: int = STEP) -> None:
 
         super().__init__(ticker, preprocessed_data, data_processor, raw_data_source)
+        self.name = name
         self.seq_len = seq_len
         self.batch_size = batch_size
         self.step = step
@@ -42,7 +44,7 @@ class KerasModel(Model, ABC):
 
         model = self.__get_model()
 
-        checkpoint_path = get_checkpoint_path(self.ticker)
+        checkpoint_path = self._get_checkpoint_path()
         checkpoint = ModelCheckpoint(checkpoint_path, monitor='val_loss',
                                      save_best_only=True, save_weights_only=True)
 
@@ -65,13 +67,13 @@ class KerasModel(Model, ABC):
 
     def __load_saved_model(self):
         # the weights of the loaded model can be different from the weights of the model in train cuz only the best weights are saved.
-        checkpoint_path = get_checkpoint_path(self.ticker)
+        checkpoint_path = self._get_checkpoint_path()
         model = self._create_model()
         # latest = tf.train.latest_checkpoint(os.path.dirname(checkpoint_path))
         try:
             model.load_weights(checkpoint_path)
         except errors_impl.NotFoundError:
-            raise ModelNotFoundError(self.ticker)
+            raise ModelNotFoundError(self.ticker, self.seq_len, self.step)
         return model
 
     def predict(self, date: str = None):
@@ -95,6 +97,16 @@ class KerasModel(Model, ABC):
         actual_y = self.__invTransform(scaler, y, self.preprocessed_data.data_processor.raw_data_source.CLOSE_COLUMN, self.preprocessed_data.data_processor.raw_data_source.FEATURE_KEYS)[0]
 
         return actual_y*100, pred_date
+
+    def _get_checkpoint_path(self) -> str:
+        dirname = os.path.dirname(os.path.realpath(__file__))
+        base_path = os.path.join(dirname, SAVED_MODELS_BASE_PATH)
+        model_path = os.path.join(base_path, f'{self.name}-{self.seq_len}-{self.step}')
+        checkpoint_base_path = os.path.join(model_path, self.ticker)
+
+        checkpoint_path = os.path.join(checkpoint_base_path, 'cp.ckpt')
+
+        return checkpoint_path
 
     @staticmethod
     def __invTransform(scaler, data, colName, colNames):
@@ -140,12 +152,3 @@ class LstmModel(KerasModel):
         )
 
         return model
-
-
-def get_checkpoint_path(ticker):
-    dirname = os.path.dirname(os.path.realpath(__file__))
-    base_path = os.path.join(dirname, SAVED_MODELS_BASE_PATH)
-    checkpoint_base_path = os.path.join(base_path, ticker)
-    checkpoint_path = os.path.join(checkpoint_base_path, 'cp.ckpt')
-
-    return checkpoint_path

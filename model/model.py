@@ -8,8 +8,8 @@ from data.raw_data import RawDataSource
 
 
 class ModelNotFoundError(Exception):
-    def __init__(self, ticker: str) -> None:
-        msg = f"There is no saved model for '{ticker}'. Please train a model for '{ticker}' first."
+    def __init__(self, ticker: str, seq_len: int, step: int) -> None:
+        msg = f"There is no saved model for '{ticker}' with seq_len={seq_len} and step={step}. Please train such a model first."
         super().__init__(msg)
 
 
