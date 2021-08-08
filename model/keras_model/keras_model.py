@@ -5,7 +5,6 @@ from typing import Type
 import numpy as np
 import pandas as pd
 import pytz
-import utils.utils as ut
 from data.data_processor import DataProcessor
 from data.preprocessed_data import PreprocessedData
 from data.raw_data import RawDataSource
@@ -16,6 +15,7 @@ from tensorflow.python.framework import errors_impl
 from tensorflow.python.keras.callbacks import ModelCheckpoint
 
 from .constants import BATCH_SIZE, SAVED_MODELS_BASE_PATH, SEQ_LEN, STEP
+from .utils import get_date_from_string, get_prediction_date
 
 
 class KerasModel(Model, ABC):
@@ -79,7 +79,7 @@ class KerasModel(Model, ABC):
     def predict(self, date: str = None):
         y, pred_date = self._predict(date)
         if date is not None:
-            date = ut.get_date_from_string(date)
+            date = get_date_from_string(date)
             if pred_date != date:
                 weekday_name = date.strftime('%A')
                 print(f'Date given ({date}) is a {weekday_name}. So, actual prediction is for: {pred_date} (Monday)')
@@ -87,7 +87,7 @@ class KerasModel(Model, ABC):
 
     def _predict(self, date: str = None):
         df = self.preprocessed_data.data_processor.raw_data_source.get_raw_df()
-        pred_date = ut.get_prediction_date(df, self.seq_len, date)
+        pred_date = get_prediction_date(df, self.seq_len, date)
         x = self.preprocessed_data.get_preprocessed_prediction_dataset(pred_date, self.seq_len, self.batch_size, self.step)
 
         model = self.__load_saved_model()
