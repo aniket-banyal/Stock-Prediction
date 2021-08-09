@@ -2,9 +2,6 @@ import os
 from abc import ABC, abstractmethod
 from typing import Type
 
-import numpy as np
-import pandas as pd
-import pytz
 from data.data_processor import DataProcessor
 from data.preprocessed_data import PreprocessedData
 from data.raw_data import RawDataSource
@@ -14,7 +11,8 @@ from tensorflow.keras.models import Sequential
 from tensorflow.python.framework import errors_impl
 from tensorflow.python.keras.callbacks import ModelCheckpoint
 
-from .constants import BATCH_SIZE, SAVED_MODELS_BASE_PATH, SEQ_LEN, STEP
+from .constants import (BATCH_SIZE, FUTURE_PERIOD_PREDICT,
+                        SAVED_MODELS_BASE_PATH, SEQ_LEN, STEP)
 from .utils import get_date_from_string, get_prediction_date
 
 
@@ -22,12 +20,13 @@ class KerasModel(Model, ABC):
     def __init__(self, ticker: str, preprocessed_data: Type[PreprocessedData],
                  data_processor: Type[DataProcessor], raw_data_source: Type[RawDataSource],
                  name: str, seq_len: int = SEQ_LEN, batch_size: int = BATCH_SIZE,
-                 step: int = STEP) -> None:
+                 step: int = STEP, future_predict_period: int = FUTURE_PERIOD_PREDICT) -> None:
 
         super().__init__(ticker)
         self.preprocessed_data = preprocessed_data(ticker, data_processor, raw_data_source,
                                                    seq_len=seq_len, batch_size=batch_size,
-                                                   step=step, model_name=name)
+                                                   step=step,  future_predict_period=future_predict_period,
+                                                   model_name=name)
         self.name = name
         self.seq_len = seq_len
         self.batch_size = batch_size

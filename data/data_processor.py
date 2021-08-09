@@ -8,7 +8,6 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
-from data.constants import FUTURE_PERIOD_PREDICT
 from data.raw_data import RawDataSource
 
 
@@ -30,11 +29,13 @@ class PandasDataProcessor(DataProcessor):
     TEST_SPLIT_FRACTION = 0.2
     VAL_SPLIT_FRACTION = 0.2
 
-    def __init__(self, ticker: str, raw_data_source: Type[RawDataSource], seq_len: int, step: int, model_name: str) -> None:
+    def __init__(self, ticker: str, raw_data_source: Type[RawDataSource],
+                 seq_len: int, step: int, future_predict_period: str, model_name: str) -> None:
         super().__init__(ticker, raw_data_source)
         self.ticker = ticker
         self.seq_len = seq_len
         self.step = step
+        self.future_predict_period = future_predict_period
         self.model_name = model_name
 
     def get_preprocessed_dfs(self) -> List[pd.DataFrame]:
@@ -67,7 +68,7 @@ class PandasDataProcessor(DataProcessor):
         df = pd.DataFrame(scaler.transform(df), columns=self.raw_data_source.FEATURE_KEYS)
 
         if return_y:
-            df['target'] = df[self.raw_data_source.CLOSE_COLUMN].shift(-FUTURE_PERIOD_PREDICT)
+            df['target'] = df[self.raw_data_source.CLOSE_COLUMN].shift(-self.future_predict_period)
             df.dropna(inplace=True)
             return df[self.raw_data_source.FEATURE_KEYS], df['target'], scaler
 
