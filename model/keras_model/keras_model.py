@@ -26,7 +26,8 @@ class KerasModel(Model, ABC):
 
         super().__init__(ticker)
         self.preprocessed_data = preprocessed_data(ticker, data_processor, raw_data_source,
-                                                   seq_len=seq_len, batch_size=batch_size, step=step)
+                                                   seq_len=seq_len, batch_size=batch_size,
+                                                   step=step, model_name=name)
         self.name = name
         self.seq_len = seq_len
         self.batch_size = batch_size

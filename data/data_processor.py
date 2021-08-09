@@ -1,6 +1,6 @@
+import datetime as dt
 import os
 from abc import ABC, abstractmethod
-import datetime as dt
 from typing import List, Type
 
 import joblib
@@ -29,12 +29,13 @@ class DataProcessor(ABC):
 class PandasDataProcessor(DataProcessor):
     TEST_SPLIT_FRACTION = 0.2
     VAL_SPLIT_FRACTION = 0.2
-    SCALER_FILE_NAME = 'scaler.gz'
 
-    def __init__(self, ticker: str, raw_data_source: Type[RawDataSource], seq_len: int, step: int) -> None:
+    def __init__(self, ticker: str, raw_data_source: Type[RawDataSource], seq_len: int, step: int, model_name: str) -> None:
         super().__init__(ticker, raw_data_source)
+        self.ticker = ticker
         self.seq_len = seq_len
         self.step = step
+        self.model_name = model_name
 
     def get_preprocessed_dfs(self) -> List[pd.DataFrame]:
         df = self.raw_data_source.get_raw_df()
@@ -106,15 +107,30 @@ class PandasDataProcessor(DataProcessor):
 
     def get_scaler(self) -> StandardScaler:
         file_path = self.get_scaler_file_path()
+        if not os.path.exists(file_path):
+            raise ScalerNotFoundError(file_path, self.ticker, self.model_name, self.seq_len, self.step)
         return joblib.load(file_path)
 
     def get_scaler_file_path(self):
-        base_path = os.path.dirname(os.path.realpath(__file__))
-        file_path = os.path.join(base_path, self.SCALER_FILE_NAME)
+        base_dir = os.path.dirname(os.path.realpath(__file__))
+        scaler_path = os.path.join(base_dir, 'scalers')
+        model_path = os.path.join(scaler_path, f'{self.model_name}-{self.seq_len}-{self.step}')
+        ticker_path = os.path.join(model_path, self.ticker)
+
+        if not os.path.exists(ticker_path):
+            os.makedirs(ticker_path)
+
+        file_path = os.path.join(ticker_path, 'scaler.gz')
         return file_path
 
 
 class NotEnoughSequencesError(Exception):
     def __init__(self, pred_date: dt.date, seq_len: int, len_x: int) -> None:
         msg = f"We need {seq_len} number of sequences to be able to predict but for date {pred_date} only {len_x} number of sequences are there. Please try a higher date."
+        super().__init__(msg)
+
+
+class ScalerNotFoundError(Exception):
+    def __init__(self, file_path: str, ticker: str,  model_name: str, seq_len: int, step: int) -> None:
+        msg = f"Scaler for model {model_name} with seq_len={seq_len} and step={step} trained for ticker: {ticker} not found. Expected to find it at this location: {file_path}. Please train such a model first."
         super().__init__(msg)
