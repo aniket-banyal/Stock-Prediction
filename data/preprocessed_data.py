@@ -119,3 +119,6 @@ class PreprocessedData:
 
         # x = np.expand_dims(x, 0)
         # return x, scaler
+
+    def invTransform(self, y):
+        return self.data_processor.invTransform(y)
