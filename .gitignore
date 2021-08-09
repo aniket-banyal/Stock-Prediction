@@ -5,4 +5,4 @@ __pycache__
 issues.txt
 t.py
 model/keras_model/saved_models
-data/scaler.gz
+data/scalers/
