@@ -32,15 +32,15 @@ def get_correct_pred_date(pred_date: dt.date, df_first_date: dt.date, df_last_da
     """
 
     if df_first_date + dt.timedelta(days=seq_len) > pred_date:
-        raise InvalidPredictionDateError(pred_date, df_first_date, lower=True)
+        raise InvalidPredictionDateError(pred_date, df_first_date, seq_len, lower=True)
 
     # If df_last_date is Fri and pred_date is greater than next Mon
     if df_last_date.weekday() == 4:
         if pred_date > df_last_date + dt.timedelta(days=3):
-            raise InvalidPredictionDateError(pred_date, df_last_date)
+            raise InvalidPredictionDateError(pred_date, df_last_date, seq_len)
 
     elif df_last_date < pred_date - dt.timedelta(days=1):
-        raise InvalidPredictionDateError(pred_date, df_last_date)
+        raise InvalidPredictionDateError(pred_date, df_last_date, seq_len)
 
     # If date is Sat or Sun make it Mon
     if pred_date.weekday() == 5:

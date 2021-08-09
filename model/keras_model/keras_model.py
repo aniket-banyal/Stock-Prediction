@@ -24,7 +24,9 @@ class KerasModel(Model, ABC):
                  name: str, seq_len: int = SEQ_LEN, batch_size: int = BATCH_SIZE,
                  step: int = STEP) -> None:
 
-        super().__init__(ticker, preprocessed_data, data_processor, raw_data_source)
+        super().__init__(ticker)
+        self.preprocessed_data = preprocessed_data(ticker, data_processor, raw_data_source,
+                                                   seq_len=seq_len, batch_size=batch_size, step=step)
         self.name = name
         self.seq_len = seq_len
         self.batch_size = batch_size
@@ -32,7 +34,7 @@ class KerasModel(Model, ABC):
         self.input_shape = (seq_len, len(self.preprocessed_data.data_processor.raw_data_source.FEATURE_KEYS))
 
     def train(self, epochs: int = 1):
-        dataset_train, dataset_val, dataset_test = self.preprocessed_data.get_preprocessed_datasets(self.seq_len, self.batch_size, self.step)
+        dataset_train, dataset_val, dataset_test = self.preprocessed_data.get_preprocessed_datasets()
 
         for batch in dataset_train.take(1):
             inputs, targets = batch
@@ -88,7 +90,7 @@ class KerasModel(Model, ABC):
     def _predict(self, date: str = None):
         df = self.preprocessed_data.data_processor.raw_data_source.get_raw_df()
         pred_date = get_prediction_date(df, self.seq_len, date)
-        x = self.preprocessed_data.get_preprocessed_prediction_dataset(pred_date, self.seq_len, self.batch_size, self.step)
+        x = self.preprocessed_data.get_preprocessed_prediction_dataset(pred_date)
 
         model = self.__load_saved_model()
         y = model.predict(x)
