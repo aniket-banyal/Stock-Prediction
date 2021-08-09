@@ -123,6 +123,16 @@ class PandasDataProcessor(DataProcessor):
         file_path = os.path.join(ticker_path, 'scaler.gz')
         return file_path
 
+    def invTransform(self, y):
+        colNames = self.raw_data_source.FEATURE_KEYS
+        closeCol = self.raw_data_source.CLOSE_COLUMN
+        scaler = self.get_scaler()
+
+        dummy = pd.DataFrame(np.zeros((len(y), len(colNames))), columns=colNames)
+        dummy[closeCol] = y
+        dummy = pd.DataFrame(scaler.inverse_transform(dummy), columns=colNames)
+        return dummy[closeCol].values[0]
+
 
 class NotEnoughSequencesError(Exception):
     def __init__(self, pred_date: dt.date, seq_len: int, len_x: int) -> None:

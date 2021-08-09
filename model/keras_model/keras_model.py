@@ -96,9 +96,7 @@ class KerasModel(Model, ABC):
         model = self.__load_saved_model()
         y = model.predict(x)
 
-        scaler = self.preprocessed_data.data_processor.get_scaler()
-        actual_y = self.__invTransform(scaler, y, self.preprocessed_data.data_processor.raw_data_source.CLOSE_COLUMN, self.preprocessed_data.data_processor.raw_data_source.FEATURE_KEYS)[0]
-
+        actual_y = self.preprocessed_data.invTransform(y)
         return actual_y*100, pred_date
 
     def _get_checkpoint_path(self) -> str:
@@ -110,13 +108,6 @@ class KerasModel(Model, ABC):
         checkpoint_path = os.path.join(checkpoint_base_path, 'cp.ckpt')
 
         return checkpoint_path
-
-    @staticmethod
-    def __invTransform(scaler, data, colName, colNames):
-        dummy = pd.DataFrame(np.zeros((len(data), len(colNames))), columns=colNames)
-        dummy[colName] = data
-        dummy = pd.DataFrame(scaler.inverse_transform(dummy), columns=colNames)
-        return dummy[colName].values
 
     @abstractmethod
     def _create_model():
