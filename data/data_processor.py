@@ -24,6 +24,10 @@ class DataProcessor(ABC):
     def get_preprocessed_prediction_df(self, pred_date: dt.date):
         """Returns a preprocessed dataframe to be used for prediction"""
 
+    @abstractmethod
+    def invTransform(self, y):
+        """Returns inverse transformed predictions"""
+
 
 class PandasDataProcessor(DataProcessor):
     TEST_SPLIT_FRACTION = 0.2
