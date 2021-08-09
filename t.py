@@ -1,16 +1,16 @@
 import matplotlib.pyplot as plt
 
 from data.data_processor import PandasDataProcessor
-from data.preprocessed_data import PreprocessedData
+from data.keras_data.keras_preprocessed_data import KerasPreprocessedData
 from data.raw_data import YfinanceNSERawData
 from model.keras_model.keras_model import LstmModel
 
 # ticker = 'Wipro'
 ticker = 'Reliance'
 
-seq_len = 10
+seq_len = 60
 step = 1
-model = LstmModel(ticker, PreprocessedData, PandasDataProcessor, YfinanceNSERawData, name='lstm', seq_len=seq_len, step=step)
+model = LstmModel(ticker, KerasPreprocessedData, PandasDataProcessor, YfinanceNSERawData, name='lstm', seq_len=seq_len, step=step)
 # model.train(1)
 # model.evaluate(dataset)
 # date = '2021-08-06'
