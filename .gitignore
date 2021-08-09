@@ -6,3 +6,4 @@ issues.txt
 t.py
 model/keras_model/saved_models
 data/scalers/
+data/nse_company_name_and_symbols.csv

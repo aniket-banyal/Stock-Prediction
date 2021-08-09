@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 
 import pandas as pd
 import yfinance as yf
-from utils.utils import validate_ticker
 
 
 class RawDataSource(ABC):
