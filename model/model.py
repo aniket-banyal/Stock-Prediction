@@ -2,7 +2,7 @@ import datetime as dt
 from abc import ABC, abstractmethod
 from typing import Union
 
-import utils.utils as ut
+from .validate import validate_ticker
 
 
 class ModelNotFoundError(Exception):
@@ -13,7 +13,7 @@ class ModelNotFoundError(Exception):
 
 class Model(ABC):
     def __init__(self, ticker: str) -> None:
-        ut.validate_ticker(ticker)
+        validate_ticker(ticker)
         self.ticker = ticker
 
     @abstractmethod
