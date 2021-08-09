@@ -11,35 +11,39 @@ from data.raw_data import RawDataSource
 
 
 class PreprocessedData:
-    def __init__(self, ticker: str, data_processor: Type[DataProcessor], raw_data_source: Type[RawDataSource]) -> None:
+    def __init__(self, ticker: str, data_processor: Type[DataProcessor], raw_data_source: Type[RawDataSource],
+                 seq_len: int, batch_size: int, step: int) -> None:
         # validate_ticker(ticker)
-        self.data_processor = data_processor(ticker, raw_data_source)
+        self.data_processor = data_processor(ticker, raw_data_source, seq_len, step)
+        self.seq_len = seq_len
+        self.batch_size = batch_size
+        self.step = step
 
-    def get_preprocessed_datasets(self, seq_len: int, batch_size: int, step: int):
+    def get_preprocessed_datasets(self):
         (train_x, train_y), (val_x, val_y),  (test_x, test_y) = self.data_processor.get_preprocessed_dfs()
 
-        dataset_train = self.get_dataset_from_df(train_x, train_y, seq_len, batch_size, step)
-        dataset_val = self.get_dataset_from_df(val_x, val_y, seq_len, batch_size, step)
-        dataset_test = self.get_dataset_from_df(test_x, test_y, seq_len, batch_size, step)
+        dataset_train = self.get_dataset_from_df(train_x, train_y)
+        dataset_val = self.get_dataset_from_df(val_x, val_y)
+        dataset_test = self.get_dataset_from_df(test_x, test_y)
 
         return dataset_train, dataset_val, dataset_test
 
-    def get_dataset_from_df(self, x: pd.DataFrame, y: pd.DataFrame, seq_len: int, batch_size: int, step: int):
+    def get_dataset_from_df(self, x: pd.DataFrame, y: pd.DataFrame):
 
         t = []
-        for i in range(seq_len-1, len(y), seq_len):
+        for i in range(self.seq_len-1, len(y), self.seq_len):
             t.append(y[i])
 
         dataset = keras.preprocessing.timeseries_dataset_from_array(
             x, t,
-            sequence_length=seq_len,
-            sampling_rate=step,
-            batch_size=batch_size,
+            sequence_length=self.seq_len,
+            sampling_rate=self.step,
+            batch_size=self.batch_size,
         )
         return dataset
 
-        #     print(i, ((seq_len-1) + seq_len*3))
-        #     if (i % ((seq_len-1) + seq_len*3) == 0):
+        #     print(i, ((self.seq_len-1) + self.seq_len*3))
+        #     if (i % ((self.seq_len-1) + self.seq_len*3) == 0):
         #         print(i)
         #         print(x[i: i+10])
         #     print(y[i])
@@ -47,12 +51,12 @@ class PreprocessedData:
 
         # print()
         # print('Y')
-        # print(y[seq_len-1: seq_len*5])
+        # print(y[self.seq_len-1: self.seq_len*5])
         # print()
 
         # sequential_data = []
-        # prev_days = deque(maxlen=seq_len)
-        # # print(x[seq_len-1:])
+        # prev_days = deque(maxlen=self.seq_len)
+        # # print(x[self.seq_len-1:])
         # print()
         # print('T: ')
         # print(t)
@@ -61,7 +65,7 @@ class PreprocessedData:
         # j = 0
         # for i in x.values:
         #     prev_days.append([n for n in i])
-        #     if len(prev_days) == seq_len and j < len(t):
+        #     if len(prev_days) == self.seq_len and j < len(t):
         #         sequential_data.append([np.array(prev_days), t[j]])
         #         j += 1
 
@@ -89,7 +93,7 @@ class PreprocessedData:
         # # random.shuffle(sequential_data)
 
         # print('##############################################')
-        # print(len(x), len(y), len(y)//seq_len, len(x)/seq_len//batch_size)
+        # print(len(x), len(y), len(y)//self.seq_len, len(x)/self.seq_len//batch_size)
         # i = 0
         # for x, y in dataset:
         #     i += 1
@@ -101,16 +105,15 @@ class PreprocessedData:
         # #         print('x', x[i][0])
         # print('##############################################')
 
-    def get_preprocessed_prediction_dataset(self, pred_date: dt.date, seq_len: int,
-                                            batch_size: int, step: int):
+    def get_preprocessed_prediction_dataset(self, pred_date: dt.date):
 
-        x = self.data_processor.get_preprocessed_prediction_df(pred_date, seq_len)
+        x = self.data_processor.get_preprocessed_prediction_df(pred_date)
         dataset = keras.preprocessing.timeseries_dataset_from_array(
             x,
             targets=None,
-            sequence_length=seq_len,
-            sampling_rate=step,
-            batch_size=batch_size,
+            sequence_length=self.seq_len,
+            sampling_rate=self.step,
+            batch_size=self.batch_size,
         )
         return dataset
 

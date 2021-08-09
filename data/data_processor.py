@@ -31,6 +31,11 @@ class PandasDataProcessor(DataProcessor):
     VAL_SPLIT_FRACTION = 0.2
     SCALER_FILE_NAME = 'scaler.gz'
 
+    def __init__(self, ticker: str, raw_data_source: Type[RawDataSource], seq_len: int, step: int) -> None:
+        super().__init__(ticker, raw_data_source)
+        self.seq_len = seq_len
+        self.step = step
+
     def get_preprocessed_dfs(self) -> List[pd.DataFrame]:
         df = self.raw_data_source.get_raw_df()
         df = df[self.raw_data_source.FEATURE_KEYS]
@@ -67,7 +72,7 @@ class PandasDataProcessor(DataProcessor):
 
         return df, scaler
 
-    def get_preprocessed_prediction_df(self, pred_date: dt.date, seq_len: int) -> pd.DataFrame:
+    def get_preprocessed_prediction_df(self, pred_date: dt.date) -> pd.DataFrame:
         # after preprocessing data, some rows will get dropped, so that's why x=x.tail(seq_len) needs to be done after preprocessing
         df = self.raw_data_source.get_raw_df()
         # in loc the end index is included so subtracting 1
@@ -77,10 +82,12 @@ class PandasDataProcessor(DataProcessor):
         df = df[self.raw_data_source.FEATURE_KEYS]
         scaler = self.get_scaler()
         x, _ = self.get_preprocessed_df(df, scaler=scaler, return_y=False)
+
         len_x = len(x)
-        if len_x < seq_len:
-            raise NotEnoughSequencesError(pred_date, seq_len, len_x)
-        x = x.tail(seq_len)
+        if len_x < self.seq_len:
+            raise NotEnoughSequencesError(pred_date, self.seq_len, len_x)
+
+        x = x.tail(self.seq_len)
         return x
 
     def train_val_test_split(self, df: pd.DataFrame) -> List[pd.DataFrame]:
