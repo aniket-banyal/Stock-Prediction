@@ -91,7 +91,7 @@ class PandasDataProcessor(DataProcessor):
 
         len_x = len(x)
         if len_x < self.seq_len:
-            raise NotEnoughSequencesError(pred_date, self.seq_len, len_x)
+            raise NotEnoughSequencesError(self.seq_len, len_x)
 
         x = x.tail(self.seq_len)
         return x
@@ -140,8 +140,8 @@ class PandasDataProcessor(DataProcessor):
 
 
 class NotEnoughSequencesError(Exception):
-    def __init__(self, pred_date: dt.date, seq_len: int, len_x: int) -> None:
-        msg = f"We need {seq_len} number of sequences to be able to predict but for date {pred_date} only {len_x} number of sequences are there. Please try a higher date."
+    def __init__(self, seq_len: int, len_x: int) -> None:
+        msg = f"We need {seq_len} number of sequences to be able to predict but for the passed date only {len_x} number of sequences are there. Please try a higher date."
         super().__init__(msg)
 
 

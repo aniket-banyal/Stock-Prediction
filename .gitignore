@@ -2,8 +2,6 @@ env
 logs
 .vscode
 __pycache__
-issues.txt
-t.py
-model/keras_model/saved_models
+model/keras_models/saved_models/
 data/scalers/
 data/nse_company_name_and_symbols.csv
